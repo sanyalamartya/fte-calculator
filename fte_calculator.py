@@ -17,10 +17,16 @@ PRODUCTIVE_PER_HOUR = FTE_PRODUCTIVE_MINUTES / 9  # ~45.3 mins per hr
 
 # Inputs
 st.sidebar.header("📥 Input Parameters")
-hours = st.sidebar.number_input("Number of hours to plan for", min_value=1, max_value=24, value=8)
-tat_target = st.sidebar.number_input("TAT Target (minutes)", min_value=15, max_value=480, value=60)
+hours = st.sidebar.number_input("Number of hours to plan for", min_value=1, max_value=24, value=9)
+aht = st.sidebar.number_input("Average Handling Time (mins per case)", min_value=1, value=5)
+tat_target = st.sidebar.number_input("TAT Target (minutes)", min_value=15, max_value=480, value=120)
 
-volumes, ahts = [], []
+st.sidebar.markdown("### Enter hourly inflow volume")
+volumes = [st.number_input(f"Hour {h+1} Volume", min_value=0, value=20*(h+1), key=f"vol{h}") for h in range(hours)]
+
+# --- Calculation ---
+workloads = [v * aht for v in*]()
+
 
 st.sidebar.markdown("### Enter workload per hour")
 for h in range(hours):
