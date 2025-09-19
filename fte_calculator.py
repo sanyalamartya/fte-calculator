@@ -25,21 +25,7 @@ st.sidebar.markdown("### Enter hourly inflow volume")
 volumes = [st.number_input(f"Hour {h+1} Volume", min_value=0, value=20*(h+1), key=f"vol{h}") for h in range(hours)]
 
 # --- Calculation ---
-workloads = [v * aht for v in*]()
-
-
-st.sidebar.markdown("### Enter workload per hour")
-for h in range(hours):
-    col1, col2 = st.sidebar.columns(2)
-    with col1:
-        vol = st.number_input(f"Hour {h+1} Volume", min_value=0, value=100, key=f"vol{h}")
-    with col2:
-        aht = st.number_input(f"Hour {h+1} AHT (mins)", min_value=1, value=3, key=f"aht{h}")
-    volumes.append(vol)
-    ahts.append(aht)
-
-# --- Calculation ---
-workloads = [v * a for v, a in zip(volumes, ahts)]  # workload in minutes
+workloads = [v * aht for v in volumes]  # workload in minutes
 fte_per_hour = []
 
 # Convert TAT target into hours (minimum 1 hr)
@@ -49,7 +35,6 @@ for i in range(hours):
     start = max(0, i - tat_window + 1)
     window_load = sum(workloads[start:i+1])
     avg_load = window_load / tat_window
-
     ftes = avg_load / PRODUCTIVE_PER_HOUR
     fte_per_hour.append(round(ftes, 2))
 
@@ -57,7 +42,7 @@ for i in range(hours):
 df = pd.DataFrame({
     "Hour": [f"{i+1}" for i in range(hours)],
     "Volume": volumes,
-    "AHT (mins)": ahts,
+    "AHT (mins)": [aht] * hours,
     "Workload (mins)": workloads,
     "FTE Required": fte_per_hour
 })
@@ -72,3 +57,14 @@ st.subheader("✅ Total FTEs Needed")
 st.metric("FTEs Required", f"{total_fte:.1f}")
 
 st.bar_chart(df.set_index("Hour")["FTE Required"])
+
+# --- Explanation ---
+st.markdown("### ℹ️ Why Peak ≠ Total FTEs")
+st.write(
+    f"Notice how in some hours (like the busiest peak) the requirement goes as high as "
+    f"**{max(df['FTE Required']):.2f} FTEs**. However, the overall FTE requirement is only "
+    f"**{total_fte:.1f}**. This is because with a TAT of {tat_target} minutes, work does not "
+    "need to be finished instantly within the same hour. It can be spread (smoothed) across the "
+    "allowed TAT window. That means temporary peaks can be absorbed without breaching SLA, "
+    "so fewer staff overall can still meet the service target."
+)
