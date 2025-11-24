@@ -58,4 +58,62 @@ tat_window = max(1, tat_target // 60)  # Convert TAT to hours, minimum 1
 
 for i in range(hours):
     start = max(0, i - tat_window + 1)
-    window_load = sum(workl_
+    window_load = sum(workloads[start: i + 1])
+    avg_load = window_load / tat_window
+    ftes = avg_load / productive_per_hour
+    fte_per_hour.append(round(ftes, 2))
+
+# Spillover workload
+spillover_workload = spillover_volume * aht
+spillover_fte = spillover_workload / productive_time
+
+# Total FTE requirement
+total_fte = (sum(workloads) + spillover_workload) / productive_time
+
+# --- Results DataFrame ---
+df = pd.DataFrame({
+    "Hour": [f"{i+1}" for i in range(hours)],
+    "Volume": volumes,
+    "AHT (mins)": [round(aht, 2)] * hours,
+    "Workload (mins)": workloads,
+    "FTE Required": fte_per_hour
+})
+
+# --- Display ---
+st.subheader("📊 Hourly Staffing Plan")
+st.dataframe(df)
+
+st.subheader("✅ Total FTEs Needed (Including Spillover)")
+st.metric("FTEs Required", f"{total_fte:.2f}")
+
+if spillover_volume > 0:
+    st.markdown(
+        f"ℹ️ Includes **{spillover_volume} spillover cases** "
+        f"= {spillover_fte:.2f} additional FTEs."
+    )
+
+st.markdown(
+    f"📌 TAT Compliance Target: **{tat_percent}%** of cases within **{tat_target} minutes**."
+)
+
+# Chart
+st.bar_chart(df.set_index("Hour")["FTE Required"])
+
+# --- Explanation ---
+st.markdown("### ℹ️ Why Peak ≠ Total FTEs")
+st.write(
+    f"Peak hourly requirement may reach **{max(df['FTE Required']):.2f} FTEs**, "
+    f"but overall only **{total_fte:.2f} FTEs** are needed because work can be smoothed "
+    f"over the **{tat_window}-hour TAT window**. Only **{tat_percent}%** must be cleared "
+    "inside the TAT, allowing workload balancing without breaching SLA."
+)
+
+# --- Download Staffing Plan ---
+st.subheader("📥 Download Staffing Plan")
+csv = df.to_csv(index=False).encode("utf-8")
+st.download_button(
+    label="Download as CSV",
+    data=csv,
+    file_name="fte_staffing_plan.csv",
+    mime="text/csv",
+)
