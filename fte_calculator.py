@@ -14,28 +14,19 @@ st.markdown(
 st.sidebar.header("📥 Input Parameters")
 
 # Staffing parameters
-staffed_time = st.sidebar.number_input(
-    "Staffed Time per FTE (minutes)", min_value=60, max_value=720, value=540, step=30
-)
-productive_time = st.sidebar.number_input(
-    "Productive Time per FTE (minutes)", min_value=30, max_value=720, value=408, step=30
-)
+staffed_time = st.sidebar.number_input("Staffed Time per FTE (minutes)", min_value=60, max_value=720, value=540, step=30)
+productive_time = st.sidebar.number_input("Productive Time per FTE (minutes)", min_value=30, max_value=720, value=408, step=30)
 
 # Derived productive minutes per hour
 productive_per_hour = productive_time / (staffed_time / 60)
 
-# Workload parameters
 hours = st.sidebar.number_input("Number of hours to plan for", min_value=1, max_value=24, value=9)
 aht = st.sidebar.number_input("Average Handling Time (mins per case)", min_value=1, value=5)
 tat_target = st.sidebar.number_input("TAT Target (minutes)", min_value=15, max_value=480, value=120)
 tat_percent = st.sidebar.slider("TAT Compliance Target (%)", min_value=50, max_value=100, value=85, step=5)
 
-# Hourly volume inputs
 st.sidebar.markdown("### Enter hourly inflow volume")
-volumes = [
-    st.number_input(f"Hour {h+1} Volume", min_value=0, value=20 * (h + 1), key=f"vol{h}")
-    for h in range(hours)
-]
+volumes = [st.number_input(f"Hour {h+1} Volume", min_value=0, value=20*(h+1), key=f"vol{h}") for h in range(hours)]
 
 # Spillover input
 spillover_volume = st.sidebar.number_input("Spillover Volume (after shift hours)", min_value=0, value=0)
@@ -48,7 +39,7 @@ tat_window = max(1, tat_target // 60)  # Convert TAT to hours, min = 1
 
 for i in range(hours):
     start = max(0, i - tat_window + 1)
-    window_load = sum(workloads[start : i + 1])
+    window_load = sum(workloads[start:i+1])
     avg_load = window_load / tat_window
     ftes = avg_load / productive_per_hour
     fte_per_hour.append(round(ftes, 2))
@@ -61,15 +52,13 @@ spillover_fte = spillover_workload / productive_time
 total_fte = (sum(workloads) + spillover_workload) / productive_time
 
 # --- Results DataFrame ---
-df = pd.DataFrame(
-    {
-        "Hour": [f"{i+1}" for i in range(hours)],
-        "Volume": volumes,
-        "AHT (mins)": [aht] * hours,
-        "Workload (mins)": workloads,
-        "FTE Required": fte_per_hour,
-    }
-)
+df = pd.DataFrame({
+    "Hour": [f"{i+1}" for i in range(hours)],
+    "Volume": volumes,
+    "AHT (mins)": [aht] * hours,
+    "Workload (mins)": workloads,
+    "FTE Required": fte_per_hour
+})
 
 # --- Display ---
 st.subheader("📊 Hourly Staffing Plan")
